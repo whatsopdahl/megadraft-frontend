@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6C5CE7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00B894;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: stacked/overlapping draft cards representing multi-league -->
+  <g transform="translate(10, 15)">
+    <!-- Back card -->
+    <rect x="22" y="8" width="48" height="62" rx="6" ry="6" fill="#A29BFE" opacity="0.5" />
+    <!-- Middle card -->
+    <rect x="11" y="4" width="48" height="62" rx="6" ry="6" fill="#6C5CE7" opacity="0.7" />
+    <!-- Front card -->
+    <rect x="0" y="0" width="48" height="62" rx="6" ry="6" fill="url(#grad1)" />
+    <!-- Lightning bolt on front card (draft/speed symbol) -->
+    <polygon points="28,12 18,36 25,36 20,50 36,26 29,26 34,12" fill="#FFFFFF" />
+  </g>
+
+  <!-- Wordmark -->
+  <text x="105" y="68" font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="52" font-weight="700" letter-spacing="-2" fill="#1A1A2E">
+    mega<tspan fill="url(#grad1)">draft</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="107" y="90" font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" letter-spacing="3.5" fill="#888899" text-transform="uppercase">
+    MULTI-LEAGUE DRAFTING
+  </text>
+</svg>

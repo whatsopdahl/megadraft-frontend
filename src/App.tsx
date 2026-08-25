@@ -1,9 +1,12 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext';
+import RequireAuth from './auth/RequireAuth';
 import Login from './pages/Login';
-import AuthCallback from './pages/AuthCallback';
-import DraftPicker from './pages/DraftPicker';
+import Dashboard from './pages/Dashboard';
+import CreateDraft from './pages/CreateDraft';
+import JoinDraft from './pages/JoinDraft';
+import DraftDetail from './pages/DraftDetail';
 import DraftRoom from './pages/DraftRoom';
 
 const App: React.FC = () => {
@@ -12,14 +15,38 @@ const App: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/" element={isAuthenticated ? <Dashboard /> : <Login />} />
         <Route
-          path="/"
-          element={isAuthenticated ? <DraftPicker /> : <Login />}
+          path="/new"
+          element={
+            <RequireAuth>
+              <CreateDraft />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/join"
+          element={
+            <RequireAuth>
+              <JoinDraft />
+            </RequireAuth>
+          }
         />
         <Route
           path="/draft/:draftId"
-          element={isAuthenticated ? <DraftRoom /> : <Navigate to="/" />}
+          element={
+            <RequireAuth>
+              <DraftDetail />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/draft/:draftId/room"
+          element={
+            <RequireAuth>
+              <DraftRoom />
+            </RequireAuth>
+          }
         />
       </Routes>
     </Router>

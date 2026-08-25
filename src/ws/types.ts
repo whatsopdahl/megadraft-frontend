@@ -1,4 +1,4 @@
-export type SportLeague = "NBA" | "NFL" | "MLB";
+export type SportLeague = "NBA" | "NFL";
 export type OrderType = "snake" | "linear";
 export type DraftStatus = "pending" | "active" | "complete";
 
@@ -6,16 +6,19 @@ export interface FantasyTeam {
   fantasyTeamId: string;
   name: string;
   ownerUserId: string | null;
+  color: string;
+  autodraft: boolean;
 }
 
 export interface Draft {
   draftId: string;
   name: string;
-  sportLeague: SportLeague;
+  sportLeagues: SportLeague[];
   draftPasswordHash: string;
   orderType: OrderType;
   pickTimerSeconds: number;
   totalRounds: number;
+  scheduledStartTime: string;
   status: DraftStatus;
   teams: FantasyTeam[];
   pickOrderTeamIds: string[];
@@ -44,9 +47,9 @@ export interface DraftPick {
   auto: boolean;
 }
 
+// createDraft/joinDraft live on the REST API (see src/api/draftApi.ts) - the
+// WebSocket API is draft-room-only.
 export type OutboundClientMessage =
-  | { action: "createDraft"; name: string; sportLeague: SportLeague; draftPassword: string; orderType: OrderType; pickTimerSeconds: number; totalRounds: number; teamNames: string[] }
-  | { action: "joinDraft"; draftId: string; draftPassword: string; fantasyTeamId: string }
   | { action: "startDraft"; draftId: string }
   | { action: "makePick"; draftId: string; playerId: string }
   | { action: "getDraftState"; draftId: string };
@@ -55,4 +58,5 @@ export type InboundServerMessage =
   | { type: "draftState"; draft: Draft; picks: DraftPick[]; players: Player[] }
   | { type: "pickMade"; pick: DraftPick; draft: Draft }
   | { type: "draftStarted"; draft: Draft }
+  | { type: "draftUpdated"; draft: Draft }
   | { type: "error"; message: string };

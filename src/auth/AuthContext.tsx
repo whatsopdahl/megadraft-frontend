@@ -1,12 +1,12 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { GoogleOAuthProvider, googleLogout } from '@react-oauth/google';
 
 export interface AuthContextType {
   idToken: string | null;
   isAuthenticated: boolean;
   userId: string | null;
-  login: () => void;
   logout: () => void;
-  completeLogin: (idToken: string, refreshToken?: string) => void;
+  completeLogin: (idToken: string) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,21 +37,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  const login = () => {
-    const domain = import.meta.env.VITE_COGNITO_HOSTED_UI_DOMAIN;
-    const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID;
-    const redirectUri = import.meta.env.VITE_REDIRECT_URI;
-
-    const loginUrl = `https://${domain}/login?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${encodeURIComponent(redirectUri)}`;
-    window.location.href = loginUrl;
-  };
-
-  const completeLogin = (newIdToken: string, refreshToken?: string) => {
+  const completeLogin = (newIdToken: string) => {
     setIdToken(newIdToken);
     sessionStorage.setItem('idToken', newIdToken);
-    if (refreshToken) {
-      sessionStorage.setItem('refreshToken', refreshToken);
-    }
 
     const expiry = getTokenExpiry(newIdToken);
     if (expiry) {
@@ -72,20 +60,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUserId(null);
     sessionStorage.removeItem('idToken');
     sessionStorage.removeItem('tokenExpiry');
-    sessionStorage.removeItem('refreshToken');
-
-    const domain = import.meta.env.VITE_COGNITO_HOSTED_UI_DOMAIN;
-    const redirectUri = import.meta.env.VITE_REDIRECT_URI;
-    const logoutUrl = `https://${domain}/logout?client_id=${import.meta.env.VITE_COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(redirectUri)}`;
-    window.location.href = logoutUrl;
+    googleLogout();
   };
 
   return (
-    <AuthContext.Provider value={{ idToken, isAuthenticated: !!idToken, userId, login, logout, completeLogin }}>
+    <AuthContext.Provider value={{ idToken, isAuthenticated: !!idToken, userId, logout, completeLogin }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+/**
+ * Wraps AuthProvider with the Google Identity Services SDK context - the
+ * GoogleLogin button (rendered in Login.tsx) needs this ancestor to work.
+ */
+export const GoogleAuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => (
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    <AuthProvider>{children}</AuthProvider>
+  </GoogleOAuthProvider>
+);
 
 export const useAuth = () => {
   const context = React.useContext(AuthContext);

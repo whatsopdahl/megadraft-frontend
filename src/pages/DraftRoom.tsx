@@ -93,6 +93,8 @@ const DraftRoom: React.FC = () => {
       setPicks((prev) => [...prev, lastMessage.pick]);
     } else if (lastMessage.type === 'draftStarted') {
       setDraft(lastMessage.draft);
+    } else if (lastMessage.type === 'draftUpdated') {
+      setDraft(lastMessage.draft);
     } else if (lastMessage.type === 'error') {
       alert(`Error: ${lastMessage.message}`);
     }
@@ -172,9 +174,9 @@ const DraftRoom: React.FC = () => {
   const currentTeam = draft.teams.find((t) => t.fantasyTeamId === onClockTeamId);
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5', p: 2 }}>
-      <Button onClick={() => navigate('/')} sx={{ mb: 2 }}>
-        Back
+    <Box sx={{ minHeight: '100vh', p: 2 }}>
+      <Button onClick={() => navigate(`/draft/${draftId}`)} sx={{ mb: 2 }}>
+        Back to draft details
       </Button>
 
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 2, mb: 2 }}>

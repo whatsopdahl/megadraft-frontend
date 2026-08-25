@@ -6,7 +6,7 @@ React + TypeScript + MUI v9 frontend for the Fantasy Draft app. Built with Vite,
 
 ```sh
 pnpm install
-cp .env.example .env.local   # fill in Cognito + API values from Terraform outputs
+cp .env.example .env.local   # fill in your Google client ID + API values from Terraform outputs
 pnpm dev
 ```
 
@@ -18,7 +18,7 @@ pnpm build   # outputs to dist/, upload to the frontend S3 bucket
 
 ## Structure
 
-- `src/auth` — Cognito auth context (email/password + Google federated login)
-- `src/pages` — Login, CreateDraft, JoinDraft, DraftRoom
-- `src/ws` — WebSocket client + typed message contracts (mirrors `fantasy-draft-lambdas`)
+- `src/auth` — Google Sign-In auth context (client-side ID-token flow, no server round-trip)
+- `src/pages` — Login, DraftPicker, DraftRoom
+- `src/ws` — WebSocket client + typed message contracts (mirrors `../lambda`)
 - `src/theme` — MUI v9 theme
