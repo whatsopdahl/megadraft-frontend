@@ -2,14 +2,18 @@ import { apiRequest } from './client';
 import { Draft, OrderType, Player } from '../ws/types';
 import { RosterConfig } from '../rosterConfig';
 
+export interface TeamInput {
+  name: string;
+  email: string;
+}
+
 export interface CreateDraftRequest {
   name: string;
-  draftPassword: string;
   orderType: OrderType;
   pickTimerSeconds: number;
   rosterConfig: RosterConfig;
   scheduledStartTime: string;
-  teamNames: string[];
+  teams: TeamInput[];
 }
 
 export interface UpdateDraftRequest {
@@ -18,13 +22,7 @@ export interface UpdateDraftRequest {
   pickTimerSeconds?: number;
   rosterConfig?: RosterConfig;
   scheduledStartTime?: string;
-  draftPassword?: string;
-  teamNames?: string[];
-}
-
-export interface JoinDraftRequest {
-  draftPassword: string;
-  fantasyTeamId: string;
+  teams?: TeamInput[];
 }
 
 export interface UpdateTeamRequest {
@@ -47,10 +45,6 @@ export function getDraft(idToken: string, draftId: string): Promise<{ draft: Dra
 
 export function updateDraft(idToken: string, draftId: string, body: UpdateDraftRequest): Promise<{ draft: Draft }> {
   return apiRequest(`/drafts/${draftId}`, { method: 'PATCH', idToken, body });
-}
-
-export function joinDraft(idToken: string, draftId: string, body: JoinDraftRequest): Promise<{ draft: Draft }> {
-  return apiRequest(`/drafts/${draftId}/join`, { method: 'POST', idToken, body });
 }
 
 export function updateTeam(idToken: string, draftId: string, body: UpdateTeamRequest): Promise<{ draft: Draft }> {

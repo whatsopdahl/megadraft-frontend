@@ -14,6 +14,7 @@ import {
 import { Add, Delete } from '@mui/icons-material';
 import { OrderType, SportLeague } from '../ws/types';
 import { RosterConfig, ROSTER_POSITIONS, computeTotalRounds } from '../rosterConfig';
+import { TeamInput } from '../api/draftApi';
 
 export interface DraftSettingsFormValues {
   name: string;
@@ -21,16 +22,16 @@ export interface DraftSettingsFormValues {
   pickTimerSeconds: number;
   rosterConfig: RosterConfig;
   scheduledStartTime: string;
-  draftPassword: string;
-  teamNames: string[];
+  teams: TeamInput[];
 }
 
 interface DraftSettingsFormProps {
   form: DraftSettingsFormValues;
   onChange: React.Dispatch<React.SetStateAction<DraftSettingsFormValues>>;
-  passwordLabel: string;
-  passwordHelperText?: string;
   disabled?: boolean;
+  // The logged-in user's own email - whichever team row matches it is theirs,
+  // so that email is locked to prevent handing their own team to someone else.
+  currentUserEmail?: string | null;
 }
 
 const LEAGUES = Object.keys(ROSTER_POSITIONS) as SportLeague[];
@@ -40,26 +41,20 @@ function parseCount(value: string): number {
   return Number.isNaN(count) ? 0 : count;
 }
 
-const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({
-  form,
-  onChange,
-  passwordLabel,
-  passwordHelperText,
-  disabled,
-}) => {
-  const addTeamName = () => {
-    onChange((prev) => ({ ...prev, teamNames: [...prev.teamNames, ''] }));
+const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({ form, onChange, disabled, currentUserEmail }) => {
+  const addTeam = () => {
+    onChange((prev) => ({ ...prev, teams: [...prev.teams, { name: '', email: '' }] }));
   };
 
-  const removeTeamName = (index: number) => {
-    onChange((prev) => ({ ...prev, teamNames: prev.teamNames.filter((_, i) => i !== index) }));
+  const removeTeam = (index: number) => {
+    onChange((prev) => ({ ...prev, teams: prev.teams.filter((_, i) => i !== index) }));
   };
 
-  const updateTeamNameAt = (index: number, value: string) => {
+  const updateTeamAt = (index: number, field: keyof TeamInput, value: string) => {
     onChange((prev) => {
-      const newTeamNames = [...prev.teamNames];
-      newTeamNames[index] = value;
-      return { ...prev, teamNames: newTeamNames };
+      const newTeams = [...prev.teams];
+      newTeams[index] = { ...newTeams[index], [field]: value };
+      return { ...prev, teams: newTeams };
     });
   };
 
@@ -128,16 +123,6 @@ const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({
         fullWidth
       />
 
-      <TextField
-        label={passwordLabel}
-        type="password"
-        value={form.draftPassword}
-        onChange={(e) => onChange((prev) => ({ ...prev, draftPassword: e.target.value }))}
-        helperText={passwordHelperText}
-        disabled={disabled}
-        fullWidth
-      />
-
       <Box>
         <Typography variant="subtitle2" sx={{ mb: 1 }}>
           Roster Configuration
@@ -183,28 +168,45 @@ const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({
         <Typography variant="subtitle2" sx={{ mb: 1 }}>
           Teams
         </Typography>
+        <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+          Each team's owner is whoever logs in with the matching email - no separate invite or join step.
+        </Typography>
         <Stack spacing={1}>
-          {form.teamNames.map((name, index) => (
-            <Box key={index} sx={{ display: 'flex', gap: 1 }}>
-              <TextField
-                label={`Team ${index + 1}`}
-                value={name}
-                onChange={(e) => updateTeamNameAt(index, e.target.value)}
-                disabled={disabled}
-                fullWidth
-                size="small"
-              />
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => removeTeamName(index)}
-                disabled={disabled || form.teamNames.length === 1}
-              >
-                <Delete />
-              </IconButton>
-            </Box>
-          ))}
-          <Button variant="outlined" size="small" startIcon={<Add />} onClick={addTeamName} disabled={disabled}>
+          {form.teams.map((team, index) => {
+            const isOwnTeam =
+              !!currentUserEmail && team.email.toLowerCase() === currentUserEmail.toLowerCase();
+            return (
+              <Box key={index} sx={{ display: 'flex', gap: 1 }}>
+                <TextField
+                  label={`Team ${index + 1} Name`}
+                  value={team.name}
+                  onChange={(e) => updateTeamAt(index, 'name', e.target.value)}
+                  disabled={disabled}
+                  fullWidth
+                  size="small"
+                />
+                <TextField
+                  label="Owner Email"
+                  type="email"
+                  value={team.email}
+                  onChange={(e) => updateTeamAt(index, 'email', e.target.value)}
+                  disabled={disabled || isOwnTeam}
+                  helperText={isOwnTeam ? 'This is you' : undefined}
+                  fullWidth
+                  size="small"
+                />
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => removeTeam(index)}
+                  disabled={disabled || form.teams.length === 1}
+                >
+                  <Delete />
+                </IconButton>
+              </Box>
+            );
+          })}
+          <Button variant="outlined" size="small" startIcon={<Add />} onClick={addTeam} disabled={disabled}>
             Add Team
           </Button>
         </Stack>

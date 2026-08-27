@@ -39,7 +39,7 @@ function toDatetimeLocalValue(iso: string): string {
 const DraftDetail: React.FC = () => {
   const { draftId } = useParams<{ draftId: string }>();
   const navigate = useNavigate();
-  const { idToken, userId } = useAuth();
+  const { idToken, userId, userEmail } = useAuth();
   const { notify } = useNotification();
 
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -54,8 +54,7 @@ const DraftDetail: React.FC = () => {
     pickTimerSeconds: 30,
     rosterConfig: DEFAULT_ROSTER_CONFIG,
     scheduledStartTime: '',
-    draftPassword: '',
-    teamNames: [''],
+    teams: [{ name: '', email: '' }],
   });
 
   const isAdmin = !!draft && draft.commissionerUserId === userId;
@@ -89,8 +88,10 @@ const DraftDetail: React.FC = () => {
       pickTimerSeconds: draft.pickTimerSeconds ?? 30,
       rosterConfig: draft.rosterConfig ?? DEFAULT_ROSTER_CONFIG,
       scheduledStartTime: draft.scheduledStartTime ? toDatetimeLocalValue(draft.scheduledStartTime) : '',
-      draftPassword: '',
-      teamNames: draft.teams.length > 0 ? draft.teams.map((t) => t.name ?? '') : [''],
+      teams:
+        draft.teams.length > 0
+          ? draft.teams.map((t) => ({ name: t.name ?? '', email: t.email ?? '' }))
+          : [{ name: '', email: '' }],
     });
   }, [draft, userId]);
 
@@ -117,7 +118,7 @@ const DraftDetail: React.FC = () => {
 
   const handleSaveDraft = async () => {
     if (!idToken || !draftId) return;
-    if (!draftForm.name || draftForm.teamNames.some((name) => !name)) {
+    if (!draftForm.name || draftForm.teams.some((team) => !team.name || !team.email)) {
       notify('Please fill in all fields', 'warning');
       return;
     }
@@ -133,11 +134,9 @@ const DraftDetail: React.FC = () => {
         pickTimerSeconds: draftForm.pickTimerSeconds,
         rosterConfig: draftForm.rosterConfig,
         scheduledStartTime: new Date(draftForm.scheduledStartTime).toISOString(),
-        ...(draftForm.draftPassword ? { draftPassword: draftForm.draftPassword } : {}),
-        teamNames: draftForm.teamNames,
+        teams: draftForm.teams,
       });
       setDraft(updated);
-      setDraftForm((prev) => ({ ...prev, draftPassword: '' }));
       notify("Draft settings updated", 'success')
     } catch (error) {
       notify(error instanceof ApiError ? error.message : 'Failed to update draft', 'error');
@@ -256,8 +255,7 @@ const DraftDetail: React.FC = () => {
                     <DraftSettingsForm
                       form={draftForm}
                       onChange={setDraftForm}
-                      passwordLabel="New Draft Password"
-                      passwordHelperText="Leave blank to keep the current password"
+                      currentUserEmail={userEmail}
                     />
                     <Button loading={savingSettings} variant="contained" onClick={handleSaveDraft}>
                       Save Draft Settings

@@ -6,7 +6,6 @@ import AuthenticatedLayout from './components/AuthenticatedLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreateDraft from './pages/CreateDraft';
-import JoinDraft from './pages/JoinDraft';
 import DraftDetail from './pages/DraftDetail';
 import DraftRoom from './pages/DraftRoom';
 
@@ -33,14 +32,6 @@ const App: React.FC = () => {
           element={
             <RequireAuth>
               <CreateDraft />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/join"
-          element={
-            <RequireAuth>
-              <JoinDraft />
             </RequireAuth>
           }
         />

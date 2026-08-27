@@ -33,17 +33,16 @@ export const useDraftSocket = (idToken: string | null): UseDraftSocketReturn => 
 
       socket.onopen = () => {
         setConnectionState('open');
-        notify("Connected", 'info')
+        notify("Connected to draft", 'success')
       };
 
       socket.onmessage = (event) => {
         try {
           const message: InboundServerMessage = JSON.parse(event.data);
           setLastMessage(message);
-          notify(`WebSocket Message: ${JSON.stringify(message)}`, 'info')
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
-          notify((error as Error).message, 'error')
+          notify("Unexpected Error: Failed to parse WebSocket message", 'error')
         }
       };
 
@@ -52,9 +51,9 @@ export const useDraftSocket = (idToken: string | null): UseDraftSocketReturn => 
         notify('Websocket Error', 'error')
       };
 
-      socket.onclose = (event) => {
+      socket.onclose = () => {
         setConnectionState('closed');
-        notify(`diconnected: [${event.code}] ${event.reason}`, 'info')
+        notify(`Disconnected from draft`, 'info')
       };
 
       socketRef.current = socket;

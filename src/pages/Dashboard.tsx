@@ -82,9 +82,6 @@ const Dashboard: React.FC = () => {
               <Button disabled={loading} variant="contained" onClick={() => navigate('/new')}>
                 Create Draft
               </Button>
-              <Button disabled={loading} variant="contained" onClick={() => navigate('/join')}>
-                Join Draft
-              </Button>
             </Stack>
           }
         />
@@ -95,8 +92,11 @@ const Dashboard: React.FC = () => {
             </Box>
           ) : drafts.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 6 }}>
-              <Typography variant="h6" sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ mb: 1 }}>
                 You're not part of any drafts yet
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                Invited to one? It'll show up here as soon as you log in with the email the commissioner used to add you.
               </Typography>
             </Box>
           ) : (

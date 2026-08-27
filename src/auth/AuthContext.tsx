@@ -6,6 +6,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   userId: string | null;
   userName: string | null;
+  userEmail: string | null;
   logout: () => void;
   completeLogin: (idToken: string) => void;
 }
@@ -16,6 +17,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [idToken, setIdToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const storedToken = sessionStorage.getItem('idToken');
@@ -29,6 +31,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const decoded = decodeIdToken(storedToken);
           setUserId(decoded.sub);
           setUserName(decoded.name ?? null);
+          setUserEmail(decoded.email ?? null);
         } catch (e) {
           sessionStorage.removeItem('idToken');
           sessionStorage.removeItem('tokenExpiry');
@@ -53,10 +56,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const decoded = decodeIdToken(newIdToken);
       setUserId(decoded.sub);
       setUserName(decoded.name ?? null);
+      setUserEmail(decoded.email ?? null);
     } catch (e) {
-      // token is malformed - leave userId/userName unset, isAuthenticated
-      // still flips true since idToken is set, but downstream commissioner/
-      // team checks that depend on userId will simply not match anything
+      // token is malformed - leave userId/userName/userEmail unset,
+      // isAuthenticated still flips true since idToken is set, but downstream
+      // commissioner/team checks that depend on userId will simply not match
+      // anything
     }
   };
 
@@ -64,6 +69,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIdToken(null);
     setUserId(null);
     setUserName(null);
+    setUserEmail(null);
     sessionStorage.removeItem('idToken');
     sessionStorage.removeItem('tokenExpiry');
     googleLogout();
@@ -71,7 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider
-      value={{ idToken, isAuthenticated: !!idToken, userId, userName, logout, completeLogin }}
+      value={{ idToken, isAuthenticated: !!idToken, userId, userName, userEmail, logout, completeLogin }}
     >
       {children}
     </AuthContext.Provider>

@@ -11,7 +11,7 @@ import BackBtn from '../components/BackBtn';
 import DraftSettingsForm, { DraftSettingsFormValues } from '../components/DraftSettingsForm';
 
 const CreateDraft: React.FC = () => {
-  const { idToken } = useAuth();
+  const { idToken, userEmail } = useAuth();
   const { notify } = useNotification();
   const navigate = useNavigate();
 
@@ -21,16 +21,14 @@ const CreateDraft: React.FC = () => {
     pickTimerSeconds: 30,
     rosterConfig: DEFAULT_ROSTER_CONFIG,
     scheduledStartTime: '',
-    draftPassword: '',
-    teamNames: [''],
+    teams: [{ name: '', email: userEmail ?? '' }],
   });
 
   const handleCreateDraft = async () => {
     if (
       !form.name ||
-      !form.draftPassword ||
       !form.scheduledStartTime ||
-      form.teamNames.some((name) => !name)
+      form.teams.some((team) => !team.name || !team.email)
     ) {
       notify('Please fill in all fields', 'warning');
       return;
@@ -48,12 +46,11 @@ const CreateDraft: React.FC = () => {
     try {
       const { draft } = await createDraftRequest(idToken, {
         name: form.name,
-        draftPassword: form.draftPassword,
         orderType: form.orderType,
         pickTimerSeconds: form.pickTimerSeconds,
         rosterConfig: form.rosterConfig,
         scheduledStartTime: new Date(form.scheduledStartTime).toISOString(),
-        teamNames: form.teamNames,
+        teams: form.teams,
       });
       navigate(`/draft/${draft.draftId}`);
     } catch (error) {
@@ -69,7 +66,7 @@ const CreateDraft: React.FC = () => {
         <CardHeader title="Create a Draft" />
         <CardContent>
           <Stack spacing={2}>
-            <DraftSettingsForm form={form} onChange={setForm} passwordLabel="Draft Password" />
+            <DraftSettingsForm form={form} onChange={setForm} currentUserEmail={userEmail} />
 
             <Button variant="contained" color="primary" fullWidth onClick={handleCreateDraft}>
               Create Draft

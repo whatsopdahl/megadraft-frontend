@@ -7,6 +7,8 @@ export type DraftStatus = "pending" | "active" | "complete";
 export interface FantasyTeam {
   fantasyTeamId: string;
   name: string;
+  // The commissioner-invited email that auto-claims this team on login.
+  email: string;
   ownerUserId: string | null;
   color: string;
   autodraft: boolean;
@@ -16,7 +18,6 @@ export interface Draft {
   draftId: string;
   name: string;
   sportLeagues: SportLeague[];
-  draftPasswordHash: string;
   orderType: OrderType;
   pickTimerSeconds: number;
   totalRounds: number;
@@ -34,26 +35,40 @@ export interface Draft {
   createdAt: string;
 }
 
+// Mirrors lambda/src/lib/types.ts's Player exactly.
 export interface Player {
   sportLeague: SportLeague;
   playerId: string;
   name: string;
   realTeam: string;
   position: string;
+  /** All real (non-bench/IR/flex) positions this player is eligible at. */
+  positions: string[];
+  /** ESPN's positional ranking (e.g. RB12). */
+  ranking: number;
+  /** ESPN's overall ranking across all players in the sport, position-agnostic. */
+  overallRanking: number;
+  /** ESPN injury status, e.g. "ACTIVE", "QUESTIONABLE", "OUT", "INJURY_RESERVE". */
+  injuryStatus: string;
+  /** Only present when ESPN reports one (typically while injured). */
+  estimatedReturnDate?: string;
 }
 
 export interface DraftPick {
   draftId: string;
   pickNumber: number;
   playerId: string;
+  playerName: string;
+  playerPosition: string;
+  sportLeague: SportLeague;
   fantasyTeamId: string;
   pickedByUserId: string | null;
   pickedAt: string;
   auto: boolean;
 }
 
-// createDraft/joinDraft live on the REST API (see src/api/draftApi.ts) - the
-// WebSocket API is draft-room-only.
+// createDraft/updateDraft live on the REST API (see src/api/draftApi.ts) -
+// the WebSocket API is draft-room-only.
 export type OutboundClientMessage =
   | { action: "startDraft"; draftId: string }
   | { action: "makePick"; draftId: string; playerId: string }
