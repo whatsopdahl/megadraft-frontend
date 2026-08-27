@@ -20,6 +20,7 @@ import { useAuth } from '../auth/AuthContext';
 import { createDraft as createDraftRequest } from '../api/draftApi';
 import { ApiError } from '../api/client';
 import { OrderType } from '../ws/types';
+import BackBtn from '../components/BackBtn';
 
 const CreateDraft: React.FC = () => {
   const { idToken } = useAuth();
@@ -87,10 +88,8 @@ const CreateDraft: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', py: 4 }}>
-      <Box sx={{ maxWidth: 600, mx: 'auto', mb: 2 }}>
-        <Button onClick={() => navigate('/')}>Back</Button>
-      </Box>
+    <>
+      <BackBtn />
 
       <Card sx={{ maxWidth: 600, mx: 'auto', boxShadow: 3 }}>
         <CardHeader title="Create a Draft" />
@@ -184,7 +183,7 @@ const CreateDraft: React.FC = () => {
           </Stack>
         </CardContent>
       </Card>
-    </Box>
+    </>
   );
 };
 

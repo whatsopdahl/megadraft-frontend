@@ -55,3 +55,7 @@ export function joinDraft(idToken: string, draftId: string, body: JoinDraftReque
 export function updateTeam(idToken: string, draftId: string, body: UpdateTeamRequest): Promise<{ draft: Draft }> {
   return apiRequest(`/drafts/${draftId}/team`, { method: 'PATCH', idToken, body });
 }
+
+export function deleteDraft(idToken: string, draftId: string): Promise<{ message: string }> {
+  return apiRequest(`/drafts/${draftId}`, { method: 'DELETE', idToken });
+}

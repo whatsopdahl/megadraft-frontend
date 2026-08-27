@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Card, CardContent, CardHeader, TextField, Button, Stack } from '@mui/material';
+import { Card, CardContent, CardHeader, TextField, Button, Stack } from '@mui/material';
 import { useAuth } from '../auth/AuthContext';
 import { joinDraft as joinDraftRequest } from '../api/draftApi';
 import { ApiError } from '../api/client';
+import BackBtn from '../components/BackBtn';
 
 const JoinDraft: React.FC = () => {
   const { idToken } = useAuth();
@@ -41,10 +42,8 @@ const JoinDraft: React.FC = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', py: 4 }}>
-      <Box sx={{ maxWidth: 600, mx: 'auto', mb: 2 }}>
-        <Button onClick={() => navigate('/')}>Back</Button>
-      </Box>
+    <>
+      <BackBtn/>
 
       <Card sx={{ maxWidth: 600, mx: 'auto', boxShadow: 3 }}>
         <CardHeader title="Join a Draft" />
@@ -79,7 +78,7 @@ const JoinDraft: React.FC = () => {
           </Stack>
         </CardContent>
       </Card>
-    </Box>
+    </>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Card, CardContent, Typography } from '@mui/material';
+import { Box, Card, CardContent } from '@mui/material';
 import megadraftLogo from '/megadraft-logo.svg';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { useAuth } from '../auth/AuthContext';
@@ -30,10 +30,7 @@ const Login: React.FC = () => {
             alt="MegaDraft"
             sx={{ width: '100%', maxWidth: 280, height: 'auto', mb: 2 }}
           />
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-            Create and join fantasy sports drafts
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', m: 2 }}>
             <GoogleLogin
               onSuccess={handleSuccess}
               onError={() => console.error('Google sign-in failed')}

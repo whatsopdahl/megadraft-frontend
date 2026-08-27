@@ -5,6 +5,9 @@ import {
   Card,
   CardContent,
   CardHeader,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   TextField,
   Select,
   MenuItem,
@@ -16,14 +19,14 @@ import {
   IconButton,
   Stack,
   Typography,
-  Chip,
   CircularProgress,
 } from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
+import { Add, Delete, ExpandMore } from '@mui/icons-material';
 import { useAuth } from '../auth/AuthContext';
-import { getDraft, updateDraft, updateTeam } from '../api/draftApi';
+import { getDraft, updateDraft, updateTeam, deleteDraft } from '../api/draftApi';
 import { ApiError } from '../api/client';
 import { Draft, OrderType } from '../ws/types';
+import BackBtn from '../components/BackBtn';
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
@@ -42,6 +45,7 @@ const DraftDetail: React.FC = () => {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const [teamForm, setTeamForm] = useState({ name: '', color: '#1e88e5', autodraft: false });
   const [draftForm, setDraftForm] = useState({
@@ -92,11 +96,14 @@ const DraftDetail: React.FC = () => {
 
   const handleSaveTeam = async () => {
     if (!idToken || !draftId) return;
+    setSavingSettings(true)
     try {
       const { draft: updated } = await updateTeam(idToken, draftId, teamForm);
       setDraft(updated);
     } catch (error) {
       alert(`Error: ${error instanceof ApiError ? error.message : 'Failed to update team'}`);
+    } finally {
+      setSavingSettings(false)
     }
   };
 
@@ -140,6 +147,20 @@ const DraftDetail: React.FC = () => {
     }
   };
 
+  const handleDeleteDraft = async () => {
+    if (!idToken || !draftId || !draft) return;
+    if (!window.confirm(`Delete "${draft.name}"? This can't be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteDraft(idToken, draftId);
+      navigate('/');
+    } catch (error) {
+      alert(`Error: ${error instanceof ApiError ? error.message : 'Failed to delete draft'}`);
+    }
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
@@ -158,74 +179,76 @@ const DraftDetail: React.FC = () => {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
-      <Button onClick={() => navigate('/')} sx={{ mb: 2 }}>
-        Back
-      </Button>
-
+    <>
+      <BackBtn disabled={loading} />
       <Box sx={{ maxWidth: 700, mx: 'auto' }}>
         <Card sx={{ mb: 2, boxShadow: 2 }}>
+          <CardHeader
+            title={draft.name}
+            subheader={draft.scheduledStartTime}
+            action={
+              <Button
+                variant="contained"
+                color="secondary"
+                fullWidth
+                sx={{ mt: 2 }}
+                disabled={!canJoinRoom}
+                onClick={() => navigate(`/draft/${draftId}/room`)}
+              >
+                {canJoinRoom ? 'Join Draft Room' : 'Join Draft Room (opens 1 hour before start)'}
+              </Button>
+            }
+          />
           <CardContent>
-            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-              <Box>
-                <Typography variant="h5">{draft.name}</Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {new Date(draft.scheduledStartTime).toLocaleString()}
-                </Typography>
-              </Box>
-              <Chip label={draft.status} color="primary" variant="outlined" />
-            </Stack>
-            <Button
-              variant="contained"
-              color="success"
-              fullWidth
-              sx={{ mt: 2 }}
-              disabled={!canJoinRoom}
-              onClick={() => navigate(`/draft/${draftId}/room`)}
-            >
-              {canJoinRoom ? 'Join Draft Room' : 'Join Draft Room (opens 1 hour before start)'}
-            </Button>
-          </CardContent>
-        </Card>
 
         {myTeam && (
-          <Card sx={{ mb: 2, boxShadow: 2 }}>
-            <CardHeader title="My Team Settings" />
-            <CardContent>
+          <Accordion defaultExpanded sx={{ mb: 2, boxShadow: 2 }}>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="h6">My Team Settings</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={2}>
-                <TextField
-                  label="Team Name"
-                  value={teamForm.name}
-                  onChange={(e) => setTeamForm((prev) => ({ ...prev, name: e.target.value }))}
-                  fullWidth
-                />
-                <TextField
-                  label="Team Color"
-                  type="color"
-                  value={teamForm.color}
-                  onChange={(e) => setTeamForm((prev) => ({ ...prev, color: e.target.value }))}
-                />
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    label="Team Name"
+                    value={teamForm.name}
+                    sx={{ flexGrow: 2 }}
+                    onChange={(e) => setTeamForm((prev) => ({ ...prev, name: e.target.value }))}
+                    disabled={savingSettings}
+                    />
+                  <TextField
+                    label="Team Color"
+                    type="color"
+                    sx={{flexGrow: 1}}
+                    value={teamForm.color}
+                    onChange={(e) => setTeamForm((prev) => ({ ...prev, color: e.target.value }))}
+                    disabled={savingSettings}
+                    />
+                </Stack>
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={teamForm.autodraft}
-                      onChange={(e) => setTeamForm((prev) => ({ ...prev, autodraft: e.target.checked }))}
+                    checked={teamForm.autodraft}
+                    onChange={(e) => setTeamForm((prev) => ({ ...prev, autodraft: e.target.checked }))}
+                    disabled={savingSettings}
                     />
                   }
                   label="Autodraft"
-                />
-                <Button variant="contained" onClick={handleSaveTeam}>
+                  />
+                <Button loading={savingSettings} variant="contained" onClick={handleSaveTeam}>
                   Save Team Settings
                 </Button>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
         )}
 
         {isAdmin && (
-          <Card sx={{ boxShadow: 2 }}>
-            <CardHeader title="Draft Settings" />
-            <CardContent>
+          <Accordion defaultExpanded sx={{ boxShadow: 2 }}>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="h6">Draft Settings</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
               <Stack spacing={2}>
                 <TextField
                   label="Draft Name"
@@ -315,12 +338,18 @@ const DraftDetail: React.FC = () => {
                 <Button variant="contained" onClick={handleSaveDraft}>
                   Save Draft Settings
                 </Button>
+
+                <Button variant="outlined" color="error" onClick={handleDeleteDraft}>
+                  Delete Draft
+                </Button>
               </Stack>
-            </CardContent>
-          </Card>
+            </AccordionDetails>
+          </Accordion>
         )}
+                  </CardContent>
+        </Card>
       </Box>
-    </Box>
+    </>
   );
 };
 

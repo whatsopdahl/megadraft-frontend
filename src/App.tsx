@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useAuth } from './auth/AuthContext';
 import RequireAuth from './auth/RequireAuth';
+import AuthenticatedLayout from './components/AuthenticatedLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreateDraft from './pages/CreateDraft';
@@ -15,7 +16,18 @@ const App: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={isAuthenticated ? <Dashboard /> : <Login />} />
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <AuthenticatedLayout>
+                <Dashboard />
+              </AuthenticatedLayout>
+            ) : (
+              <Login />
+            )
+          }
+        />
         <Route
           path="/new"
           element={

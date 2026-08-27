@@ -30,6 +30,21 @@ const theme = createTheme({
         },
       }),
     },
+    MuiCardHeader: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderBottom: '2px solid',
+          borderColor: theme.palette.primary.main
+        })
+      }
+    },
+    MuiFab: {
+      styleOverrides: {
+        root: ({theme}) => ({
+          backgroundColor: theme.palette.background.paper 
+        })
+      }
+    }
   },
 });
 

@@ -174,7 +174,7 @@ const DraftRoom: React.FC = () => {
   const currentTeam = draft.teams.find((t) => t.fantasyTeamId === onClockTeamId);
 
   return (
-    <Box sx={{ minHeight: '100vh', p: 2 }}>
+    <>
       <Button onClick={() => navigate(`/draft/${draftId}`)} sx={{ mb: 2 }}>
         Back to draft details
       </Button>
@@ -342,7 +342,7 @@ const DraftRoom: React.FC = () => {
           </Card>
         </Box>
       </Box>
-    </Box>
+    </>
   );
 };
 
