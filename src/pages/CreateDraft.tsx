@@ -1,60 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  CardContent,
-  CardHeader,
-  TextField,
-  Button,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  IconButton,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
+import { Card, CardContent, CardHeader, Button, Stack } from '@mui/material';
 import { useAuth } from '../auth/AuthContext';
+import { useNotification } from '../notifications/NotificationContext';
 import { createDraft as createDraftRequest } from '../api/draftApi';
 import { ApiError } from '../api/client';
 import { OrderType } from '../ws/types';
+import { DEFAULT_ROSTER_CONFIG, computeTotalRounds } from '../rosterConfig';
 import BackBtn from '../components/BackBtn';
+import DraftSettingsForm, { DraftSettingsFormValues } from '../components/DraftSettingsForm';
 
 const CreateDraft: React.FC = () => {
   const { idToken } = useAuth();
+  const { notify } = useNotification();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<DraftSettingsFormValues>({
     name: '',
     orderType: 'snake' as OrderType,
     pickTimerSeconds: 30,
-    totalRounds: 10,
+    rosterConfig: DEFAULT_ROSTER_CONFIG,
     scheduledStartTime: '',
     draftPassword: '',
-    teamNames: [''] as string[],
+    teamNames: [''],
   });
-
-  const handleFormChange = (field: string, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const addTeamName = () => {
-    setForm((prev) => ({ ...prev, teamNames: [...prev.teamNames, ''] }));
-  };
-
-  const removeTeamName = (index: number) => {
-    setForm((prev) => ({ ...prev, teamNames: prev.teamNames.filter((_, i) => i !== index) }));
-  };
-
-  const updateTeamName = (index: number, value: string) => {
-    setForm((prev) => {
-      const newTeamNames = [...prev.teamNames];
-      newTeamNames[index] = value;
-      return { ...prev, teamNames: newTeamNames };
-    });
-  };
 
   const handleCreateDraft = async () => {
     if (
@@ -63,7 +32,12 @@ const CreateDraft: React.FC = () => {
       !form.scheduledStartTime ||
       form.teamNames.some((name) => !name)
     ) {
-      alert('Please fill in all fields');
+      notify('Please fill in all fields', 'warning');
+      return;
+    }
+
+    if (computeTotalRounds(form.rosterConfig) === 0) {
+      notify('Roster configuration must include at least one slot', 'warning');
       return;
     }
 
@@ -77,13 +51,13 @@ const CreateDraft: React.FC = () => {
         draftPassword: form.draftPassword,
         orderType: form.orderType,
         pickTimerSeconds: form.pickTimerSeconds,
-        totalRounds: form.totalRounds,
+        rosterConfig: form.rosterConfig,
         scheduledStartTime: new Date(form.scheduledStartTime).toISOString(),
         teamNames: form.teamNames,
       });
       navigate(`/draft/${draft.draftId}`);
     } catch (error) {
-      alert(`Error: ${error instanceof ApiError ? error.message : 'Failed to create draft'}`);
+      notify(error instanceof ApiError ? error.message : 'Failed to create draft', 'error');
     }
   };
 
@@ -95,87 +69,7 @@ const CreateDraft: React.FC = () => {
         <CardHeader title="Create a Draft" />
         <CardContent>
           <Stack spacing={2}>
-            <TextField
-              label="Draft Name"
-              value={form.name}
-              onChange={(e) => handleFormChange('name', e.target.value)}
-              fullWidth
-            />
-
-            <FormControl fullWidth>
-              <InputLabel>Order Type</InputLabel>
-              <Select
-                value={form.orderType}
-                label="Order Type"
-                onChange={(e) => handleFormChange('orderType', e.target.value as OrderType)}
-              >
-                <MenuItem value="snake">Snake</MenuItem>
-                <MenuItem value="linear">Linear</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Pick Timer (seconds)"
-              type="number"
-              value={form.pickTimerSeconds}
-              onChange={(e) => handleFormChange('pickTimerSeconds', parseInt(e.target.value, 10))}
-              fullWidth
-            />
-
-            <TextField
-              label="Total Rounds"
-              type="number"
-              value={form.totalRounds}
-              onChange={(e) => handleFormChange('totalRounds', parseInt(e.target.value, 10))}
-              fullWidth
-            />
-
-            <TextField
-              label="Draft Date & Time"
-              type="datetime-local"
-              value={form.scheduledStartTime}
-              onChange={(e) => handleFormChange('scheduledStartTime', e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-              fullWidth
-            />
-
-            <TextField
-              label="Draft Password"
-              type="password"
-              value={form.draftPassword}
-              onChange={(e) => handleFormChange('draftPassword', e.target.value)}
-              fullWidth
-            />
-
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Team Names
-              </Typography>
-              <Stack spacing={1}>
-                {form.teamNames.map((name, index) => (
-                  <Box key={index} sx={{ display: 'flex', gap: 1 }}>
-                    <TextField
-                      label={`Team ${index + 1}`}
-                      value={name}
-                      onChange={(e) => updateTeamName(index, e.target.value)}
-                      fullWidth
-                      size="small"
-                    />
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => removeTeamName(index)}
-                      disabled={form.teamNames.length === 1}
-                    >
-                      <Delete />
-                    </IconButton>
-                  </Box>
-                ))}
-                <Button variant="outlined" size="small" startIcon={<Add />} onClick={addTeamName}>
-                  Add Team
-                </Button>
-              </Stack>
-            </Box>
+            <DraftSettingsForm form={form} onChange={setForm} passwordLabel="Draft Password" />
 
             <Button variant="contained" color="primary" fullWidth onClick={handleCreateDraft}>
               Create Draft

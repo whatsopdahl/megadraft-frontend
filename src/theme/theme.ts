@@ -1,9 +1,15 @@
 import { createTheme } from '@mui/material/styles';
 
+// palette.background.default must stay a real color - MUI internals (Avatar,
+// Snackbar, TableCell, etc.) run color math like emphasize()/alpha() on it and
+// crash on a gradient string. The gradient itself is applied separately, only
+// to the page body, via MuiCssBaseline below.
+const APP_BACKGROUND_GRADIENT = 'linear-gradient(135deg, #6C5CE7, #00B894)';
+
 const theme = createTheme({
   palette: {
     background: {
-      default: "linear-gradient(135deg, #6C5CE7, #00B894)"
+      default: '#6C5CE7',
     },
     primary: {
       main: '#6C5CE7',
@@ -22,13 +28,14 @@ const theme = createTheme({
   },
   components: {
     MuiCssBaseline: {
-      styleOverrides: (theme) => ({
+      styleOverrides: {
         // backgroundColor can't hold a gradient - CssBaseline sets that by
-        // default, which silently drops palette.background.default here.
+        // default, which silently drops a gradient value here.
         body: {
-          background: theme.palette.background.default,
+          background: APP_BACKGROUND_GRADIENT,
+          minHeight: '100vh',
         },
-      }),
+      },
     },
     MuiCardHeader: {
       styleOverrides: {

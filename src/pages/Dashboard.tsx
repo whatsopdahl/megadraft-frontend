@@ -11,17 +11,27 @@ import {
   Chip,
   CircularProgress,
   CardHeader,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
 } from '@mui/material';
+import { MoreVert, Delete } from '@mui/icons-material';
 import { useAuth } from '../auth/AuthContext';
-import { listMyDrafts } from '../api/draftApi';
+import { useNotification } from '../notifications/NotificationContext';
+import { listMyDrafts, deleteDraft } from '../api/draftApi';
+import { ApiError } from '../api/client';
 import { Draft } from '../ws/types';
 
 const Dashboard: React.FC = () => {
   const { idToken, userId } = useAuth();
+  const { notify } = useNotification();
   const navigate = useNavigate();
 
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+  const [menuDraftId, setMenuDraftId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!idToken) return;
@@ -40,8 +50,31 @@ const Dashboard: React.FC = () => {
     return myTeam ? myTeam.name : 'Member';
   };
 
+  const closeMenu = () => {
+    setMenuAnchorEl(null);
+    setMenuDraftId(null);
+  };
+
+  const handleDeleteDraft = async (draft: Draft) => {
+    closeMenu();
+    if (!idToken) return;
+    if (!window.confirm(`Delete "${draft.name}"? This can't be undone.`)) {
+      return;
+    }
+
+    try {
+      await deleteDraft(idToken, draft.draftId);
+      setDrafts((prev) => prev.filter((d) => d.draftId !== draft.draftId));
+    } catch (error) {
+      notify(error instanceof ApiError ? error.message : 'Failed to delete draft', 'error');
+    }
+  };
+
+  const menuDraft = drafts.find((d) => d.draftId === menuDraftId) ?? null;
+
   return (
-      <Card sx={{ boxShadow: 3, maxWidth: 700, mx: 'auto'}}>
+    <>
+      <Card sx={{ boxShadow: 3, maxWidth: 700, mx: 'auto' }}>
         <CardHeader
           title="My Drafts"
           action={
@@ -69,17 +102,28 @@ const Dashboard: React.FC = () => {
           ) : (
             <Stack spacing={2}>
               {drafts.map((draft) => (
-                <Card key={draft.draftId} sx={{ boxShadow: 2 }}>
+                <Card key={draft.draftId} sx={{ boxShadow: 2, position: 'relative' }}>
                   <CardActionArea onClick={() => navigate(`/draft/${draft.draftId}`)}>
                     <CardContent>
-                      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Box>
-                          <Typography variant="h6">{draft.name}</Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            {new Date(draft.scheduledStartTime).toLocaleString()} · {roleLabel(draft)}
-                          </Typography>
-                        </Box>
-                        <Chip label={draft.status} color="primary" variant="outlined" />
+                      <Stack direction="column">
+                        <Stack direction="row" sx={{ justifyContent: 'flex-end', alignItems: 'center' }}>
+                          <Typography sx={{ flexGrow: 1 }} variant="h6">{draft.name}</Typography>
+                          <Chip label={draft.status} size="small" color="primary" variant="outlined" />
+                          {draft.commissionerUserId === userId && (
+                            <IconButton
+                              aria-label="draft options"
+                              onClick={(e) => {
+                                setMenuAnchorEl(e.currentTarget);
+                                setMenuDraftId(draft.draftId);
+                              }}
+                            >
+                              <MoreVert />
+                            </IconButton>
+                          )}
+                        </Stack>
+                        <Typography variant="body2" color="textSecondary">
+                          {new Date(draft.scheduledStartTime).toLocaleString()} · {roleLabel(draft)}
+                        </Typography>
                       </Stack>
                     </CardContent>
                   </CardActionArea>
@@ -89,6 +133,15 @@ const Dashboard: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      <Menu anchorEl={menuAnchorEl} open={!!menuAnchorEl} onClose={closeMenu}>
+        <MenuItem onClick={() => menuDraft && handleDeleteDraft(menuDraft)}>
+          <ListItemIcon>
+            <Delete fontSize="small" color="error" />
+          </ListItemIcon>
+          Delete Draft
+        </MenuItem>
+      </Menu>
+    </>
   );
 };
 

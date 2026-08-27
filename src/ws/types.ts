@@ -1,3 +1,5 @@
+import type { RosterConfig } from "../rosterConfig";
+
 export type SportLeague = "NBA" | "NFL";
 export type OrderType = "snake" | "linear";
 export type DraftStatus = "pending" | "active" | "complete";
@@ -18,6 +20,9 @@ export interface Draft {
   orderType: OrderType;
   pickTimerSeconds: number;
   totalRounds: number;
+  // drafts created before this field existed won't have one - treated as
+  // "no roster-slot enforcement" everywhere it's read
+  rosterConfig?: RosterConfig;
   scheduledStartTime: string;
   status: DraftStatus;
   teams: FantasyTeam[];

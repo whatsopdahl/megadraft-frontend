@@ -1,12 +1,13 @@
 import { apiRequest } from './client';
 import { Draft, OrderType } from '../ws/types';
+import { RosterConfig } from '../rosterConfig';
 
 export interface CreateDraftRequest {
   name: string;
   draftPassword: string;
   orderType: OrderType;
   pickTimerSeconds: number;
-  totalRounds: number;
+  rosterConfig: RosterConfig;
   scheduledStartTime: string;
   teamNames: string[];
 }
@@ -15,7 +16,7 @@ export interface UpdateDraftRequest {
   name?: string;
   orderType?: OrderType;
   pickTimerSeconds?: number;
-  totalRounds?: number;
+  rosterConfig?: RosterConfig;
   scheduledStartTime?: string;
   draftPassword?: string;
   teamNames?: string[];

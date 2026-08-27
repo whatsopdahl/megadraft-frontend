@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, TextField, Button, Stack } from '@mui/material';
 import { useAuth } from '../auth/AuthContext';
+import { useNotification } from '../notifications/NotificationContext';
 import { joinDraft as joinDraftRequest } from '../api/draftApi';
 import { ApiError } from '../api/client';
 import BackBtn from '../components/BackBtn';
 
 const JoinDraft: React.FC = () => {
   const { idToken } = useAuth();
+  const { notify } = useNotification();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -22,7 +24,7 @@ const JoinDraft: React.FC = () => {
 
   const handleJoinDraft = async () => {
     if (!form.draftId || !form.draftPassword || !form.fantasyTeamId) {
-      alert('Please fill in all fields');
+      notify('Please fill in all fields', 'warning');
       return;
     }
 
@@ -37,7 +39,7 @@ const JoinDraft: React.FC = () => {
       });
       navigate(`/draft/${draft.draftId}`);
     } catch (error) {
-      alert(`Error: ${error instanceof ApiError ? error.message : 'Failed to join draft'}`);
+      notify(error instanceof ApiError ? error.message : 'Failed to join draft', 'error');
     }
   };
 

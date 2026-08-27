@@ -23,14 +23,19 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { useAuth } from '../auth/AuthContext';
+import { useNotification } from '../notifications/NotificationContext';
 import { useDraftSocket } from '../ws/useDraftSocket';
-import { Draft, DraftPick, Player } from '../ws/types';
+import { Draft, DraftPick, Player, SportLeague } from '../ws/types';
 import { teamIdForPick } from '../ws/draftOrder';
+import { ROSTER_POSITIONS, hasRosterCapacity, assignRosterSlots } from '../rosterConfig';
+
+const LEAGUES = Object.keys(ROSTER_POSITIONS) as SportLeague[];
 
 const DraftRoom: React.FC = () => {
   const { draftId } = useParams<{ draftId: string }>();
   const navigate = useNavigate();
   const { idToken } = useAuth();
+  const { notify } = useNotification();
   const { send, lastMessage, connectionState } = useDraftSocket(idToken);
 
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -68,6 +73,12 @@ const DraftRoom: React.FC = () => {
   const isCurrentUserTurn = draft && userFantasyTeamId && onClockTeamId === userFantasyTeamId;
   const isCommissioner = draft && userInfo && draft.commissionerUserId === userInfo.sub;
 
+  const myTeamEntries = picks
+    .filter((p) => p.fantasyTeamId === userFantasyTeamId)
+    .map((p) => players.find((pl) => pl.playerId === p.playerId))
+    .filter((p): p is Player => !!p)
+    .map((p) => ({ position: p.position, sportLeague: p.sportLeague }));
+
   // Fetch initial draft state
   useEffect(() => {
     if (!draftId || connectionState !== 'open') {
@@ -96,9 +107,9 @@ const DraftRoom: React.FC = () => {
     } else if (lastMessage.type === 'draftUpdated') {
       setDraft(lastMessage.draft);
     } else if (lastMessage.type === 'error') {
-      alert(`Error: ${lastMessage.message}`);
+      notify(lastMessage.message, 'error');
     }
-  }, [lastMessage]);
+  }, [lastMessage, notify]);
 
   // Timer logic
   useEffect(() => {
@@ -287,7 +298,11 @@ const DraftRoom: React.FC = () => {
                                   <Button
                                     variant="contained"
                                     size="small"
-                                    disabled={!isCurrentUserTurn || draft.status === 'pending'}
+                                    disabled={
+                                      !isCurrentUserTurn ||
+                                      draft.status === 'pending' ||
+                                      !hasRosterCapacity(draft.rosterConfig, myTeamEntries, player)
+                                    }
                                     onClick={() => handleDraftPlayer(player.playerId)}
                                   >
                                     Draft
@@ -312,7 +327,20 @@ const DraftRoom: React.FC = () => {
             <CardContent>
               <Stack spacing={2}>
                 {draft.teams.map((team) => {
-                  const teamPicks = picks.filter((p) => p.fantasyTeamId === team.fantasyTeamId);
+                  const teamPicks = picks
+                    .filter((p) => p.fantasyTeamId === team.fantasyTeamId)
+                    .slice()
+                    .sort((a, b) => a.pickNumber - b.pickNumber)
+                    .map((p) => {
+                      const player = players.find((pl) => pl.playerId === p.playerId);
+                      return player
+                        ? { playerId: p.playerId, name: player.name, position: player.position, sportLeague: player.sportLeague }
+                        : null;
+                    })
+                    .filter((p): p is { playerId: string; name: string; position: string; sportLeague: SportLeague } => !!p);
+
+                  const assignments = draft.rosterConfig ? assignRosterSlots(draft.rosterConfig, teamPicks) : null;
+
                   return (
                     <Box key={team.fantasyTeamId}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
@@ -322,16 +350,35 @@ const DraftRoom: React.FC = () => {
                         <Typography variant="caption" color="textSecondary">
                           No picks yet
                         </Typography>
+                      ) : assignments ? (
+                        LEAGUES.map((league) => {
+                          const leagueAssignments = assignments.filter((a) => a.league === league);
+                          if (leagueAssignments.length === 0) return null;
+                          return (
+                            <Box key={league} sx={{ mt: 0.5 }}>
+                              <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>
+                                {league}
+                              </Typography>
+                              <Stack spacing={0.25}>
+                                {leagueAssignments.map((a) => {
+                                  const player = teamPicks.find((p) => p.playerId === a.playerId);
+                                  return (
+                                    <Typography key={a.playerId} variant="caption">
+                                      {a.slot}: {player?.name}
+                                    </Typography>
+                                  );
+                                })}
+                              </Stack>
+                            </Box>
+                          );
+                        })
                       ) : (
                         <Stack spacing={0.5}>
-                          {teamPicks.map((pick) => {
-                            const player = players.find((p) => p.playerId === pick.playerId);
-                            return (
-                              <Typography key={pick.playerId} variant="caption">
-                                • {player?.name} ({player?.position})
-                              </Typography>
-                            );
-                          })}
+                          {teamPicks.map((pick) => (
+                            <Typography key={pick.playerId} variant="caption">
+                              • {pick.name} ({pick.position})
+                            </Typography>
+                          ))}
                         </Stack>
                       )}
                     </Box>
