@@ -1,0 +1,72 @@
+name: Deploy Frontend
+
+# Push to main builds and deploys to dev automatically. Manual dispatch can
+# target either dev or prod on demand - useful for redeploying without a new
+# commit (e.g. after the API/WebSocket endpoints change but the frontend
+# code hasn't), or for promoting the current main to prod.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options: [dev, prod]
+        default: dev
+        required: true
+
+permissions:
+  id-token: write # required to assume the AWS role via OIDC
+  contents: read
+
+concurrency:
+  # Serializes concurrent deploys to the same environment; a dev and a prod
+  # run triggered around the same time don't need to queue behind each other.
+  group: deploy-frontend-${{ github.event.inputs.environment || 'dev' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Selects which GitHub Environment's secrets/variables this job sees
+    # (S3_BUCKET_NAME, CLOUDFRONT_DISTRIBUTION_ID, VITE_*, AWS_DEPLOY_ROLE_ARN)
+    # and which "environment:*" subject the OIDC trust policy matches -
+    # github-oidc-frontend.tf already wildcards the environment name, so
+    # this needed no IAM change. Pair with required-reviewer protection on
+    # the "prod" environment (GitHub repo Settings, not Terraform-managed)
+    # to gate production deploys behind manual approval.
+    environment: ${{ github.event.inputs.environment || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_WEBSOCKET_URL: ${{ vars.VITE_WEBSOCKET_URL }}
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+        run: pnpm build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Sync to S3
+        run: aws s3 sync dist/ "s3://${{ vars.S3_BUCKET_NAME }}" --delete
+
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" --paths "/*"
