@@ -72,7 +72,10 @@ export interface DraftPick {
 export type OutboundClientMessage =
   | { action: "startDraft"; draftId: string }
   | { action: "makePick"; draftId: string; playerId: string }
-  | { action: "getDraftState"; draftId: string };
+  | { action: "getDraftState"; draftId: string }
+  // Sent the instant a client's local countdown reaches the pick deadline,
+  // so autodraft doesn't have to wait on EventBridge Scheduler jitter.
+  | { action: "checkPickTimeout"; draftId: string; pickNumber: number };
 
 export type InboundServerMessage =
   | { type: "draftState"; draft: Draft; picks: DraftPick[] }

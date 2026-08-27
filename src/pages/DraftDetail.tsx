@@ -102,6 +102,13 @@ const DraftDetail: React.FC = () => {
 
   const canJoinRoom = !!draft && now >= new Date(draft.scheduledStartTime).getTime() - ONE_HOUR_MS;
 
+  // Settings can't be changed once a draft is complete; send straight to the review page.
+  useEffect(() => {
+    if (draft?.status === 'complete' && draftId) {
+      navigate(`/draft/${draftId}/review`, { replace: true });
+    }
+  }, [draft?.status, draftId, navigate]);
+
   const handleSaveTeam = async () => {
     if (!idToken || !draftId) return;
     setSavingSettings(true)
@@ -145,7 +152,7 @@ const DraftDetail: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading || draft?.status === 'complete') {
     return (
       <Box sx={{ maxWidth: 700, mx: 'auto' }}>
         <Card sx={{ mb: 2, boxShadow: 2 }}>

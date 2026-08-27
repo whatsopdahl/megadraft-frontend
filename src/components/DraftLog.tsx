@@ -16,7 +16,7 @@ const DraftLog: React.FC<DraftLogProps> = ({ picks, teams }) => {
 
   return (
     <Card>
-      <CardHeader title="Previous Picks" />
+      <CardHeader title="Draft Log" />
       <CardContent>
         <Stack spacing={1}>
           {mostRecentFirst.map((pick, index) => {

@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import CreateDraft from './pages/CreateDraft';
 import DraftDetail from './pages/DraftDetail';
 import DraftRoom from './pages/DraftRoom';
+import DraftReview from './pages/DraftReview';
 
 const App: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -48,6 +49,14 @@ const App: React.FC = () => {
           element={
             <RequireAuth>
               <DraftRoom />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/draft/:draftId/review"
+          element={
+            <RequireAuth>
+              <DraftReview />
             </RequireAuth>
           }
         />

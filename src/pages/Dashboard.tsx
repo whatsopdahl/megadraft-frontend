@@ -103,7 +103,7 @@ const Dashboard: React.FC = () => {
             <Stack spacing={2}>
               {drafts.map((draft) => (
                 <Card key={draft.draftId} sx={{ boxShadow: 2, position: 'relative' }}>
-                  <CardActionArea onClick={() => navigate(`/draft/${draft.draftId}`)}>
+                  <CardActionArea onClick={() => navigate(`/draft/${draft.draftId}${draft.status === 'complete' ? '/review' : ''}`)}>
                     <CardContent>
                       <Stack direction="column">
                         <Stack direction="row" sx={{ justifyContent: 'flex-end', alignItems: 'center' }}>

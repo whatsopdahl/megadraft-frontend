@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Card, CardHeader, Button, Typography, Stack } from '@mui/material';
+import { Box, Card, CardHeader, Button, Typography, Stack, FormControlLabel, Switch } from '@mui/material';
 import { useAuth } from '../auth/AuthContext';
 import { useNotification } from '../notifications/NotificationContext';
 import { useDraftSocket } from '../ws/useDraftSocket';
+import { usePickTimeoutTrigger } from '../ws/usePickTimeoutTrigger';
 import { Draft, DraftPick } from '../ws/types';
 import { teamIdForPick } from '../ws/draftOrder';
+import { updateTeam } from '../api/draftApi';
+import { ApiError } from '../api/client';
 import DraftOrder from '../components/DraftOrder';
 import Roster from '../components/Roster';
 import PlayerSearch from '../components/PlayerSearch';
@@ -31,6 +34,7 @@ const DraftRoom: React.FC = () => {
   const [picks, setPicks] = useState<DraftPick[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeToDraft, setTimeToDraft] = useState(0);
+  const [autodraftSaving, setAutodraftSaving] = useState(false);
 
   // Decode JWT to get user info
   const decodeToken = (token: string) => {
@@ -42,7 +46,8 @@ const DraftRoom: React.FC = () => {
   };
 
   const userInfo = idToken ? decodeToken(idToken) : null;
-  const userFantasyTeamId = draft?.teams.find((t) => t.ownerUserId === userInfo?.sub)?.fantasyTeamId;
+  const myTeam = draft?.teams.find((t) => t.ownerUserId === userInfo?.sub);
+  const userFantasyTeamId = myTeam?.fantasyTeamId;
   const onClockTeamId = draft
     ? teamIdForPick(draft.pickOrderTeamIds, draft.orderType, draft.currentPickNumber)
     : undefined;
@@ -62,6 +67,8 @@ const DraftRoom: React.FC = () => {
     send({ action: 'getDraftState', draftId });
   }, [draftId, connectionState, send]);
 
+  usePickTimeoutTrigger(draft, draftId, connectionState, send);
+
   // Handle incoming messages
   useEffect(() => {
     if (!lastMessage) {
@@ -73,6 +80,11 @@ const DraftRoom: React.FC = () => {
       setPicks(lastMessage.picks);
       setLoading(false);
     } else if (lastMessage.type === 'pickMade') {
+      const team = lastMessage.draft.teams.find((t) => t.fantasyTeamId === lastMessage.pick.fantasyTeamId);
+      notify(
+        `${team?.name ?? 'A team'} picked ${lastMessage.pick.playerName} (${lastMessage.pick.sportLeague})`,
+        'info',
+      );
       setDraft(lastMessage.draft);
       setPicks((prev) => [...prev, lastMessage.pick]);
     } else if (lastMessage.type === 'draftStarted') {
@@ -109,7 +121,28 @@ const DraftRoom: React.FC = () => {
     send({ action: 'startDraft', draftId });
   };
 
-  if (loading) {
+  const handleToggleAutodraft = async (autodraft: boolean) => {
+    if (!draftId || !idToken) return;
+    setAutodraftSaving(true);
+    try {
+      // The draftUpdated broadcast this triggers is what actually updates
+      // `draft` state - no local optimistic update needed.
+      await updateTeam(idToken, draftId, { autodraft });
+    } catch (error) {
+      notify(error instanceof ApiError ? error.message : 'Failed to update autodraft setting', 'error');
+    } finally {
+      setAutodraftSaving(false);
+    }
+  };
+
+  // Completed drafts are shown on the dedicated review page instead of the live room.
+  useEffect(() => {
+    if (draft?.status === 'complete' && draftId) {
+      navigate(`/draft/${draftId}/review`, { replace: true });
+    }
+  }, [draft?.status, draftId, navigate]);
+
+  if (loading || draft?.status === 'complete') {
     return <DraftRoomSkeleton />;
   }
 
@@ -127,9 +160,21 @@ const DraftRoom: React.FC = () => {
       <Card sx={{ mb: 2 }}>
         <CardHeader
           title={draft.name}
-          subheader={draft.status === 'complete' ? 'Draft Completed' : timeToDraft > 0 ? `Time to draft: ${formatTimeToDraft(timeToDraft)}` : `Commissioner will start the draft when ready`}
+          subheader={draft.status === 'pending' ? timeToDraft > 0 ? `Time to draft: ${formatTimeToDraft(timeToDraft)}` : `Commissioner will start the draft when ready` : undefined}
           action={
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+              {myTeam && (
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={myTeam.autodraft}
+                      disabled={autodraftSaving}
+                      onChange={(e) => handleToggleAutodraft(e.target.checked)}
+                    />
+                  }
+                  label="Autodraft"
+                />
+              )}
               {draft.status === 'pending' && isCommissioner &&
                 <Button variant="contained" color="success" onClick={handleStartDraft} sx={{ m: 1 }}>
                   Start Draft

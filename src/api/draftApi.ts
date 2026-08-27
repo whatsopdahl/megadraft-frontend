@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import { Draft, OrderType, Player } from '../ws/types';
+import { Draft, DraftPick, OrderType, Player } from '../ws/types';
 import { RosterConfig } from '../rosterConfig';
 
 export interface TeamInput {
@@ -57,4 +57,8 @@ export function deleteDraft(idToken: string, draftId: string): Promise<{ message
 
 export function getPlayers(idToken: string, draftId: string): Promise<{ players: Player[] }> {
   return apiRequest(`/drafts/${draftId}/players`, { method: 'GET', idToken });
+}
+
+export function getDraftPicks(idToken: string, draftId: string): Promise<{ picks: DraftPick[] }> {
+  return apiRequest(`/drafts/${draftId}/picks`, { method: 'GET', idToken });
 }

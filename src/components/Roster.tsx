@@ -8,6 +8,7 @@ interface RosterProps {
   rosterConfig?: RosterConfig;
   picks: DraftPick[];
   fantasyTeamId?: string;
+  title?: string;
 }
 
 interface SlotRow {
@@ -46,7 +47,7 @@ function buildSlotRows(league: SportLeague, rosterConfig: RosterConfig, teamPick
   return rows;
 }
 
-const Roster: React.FC<RosterProps> = ({ sportLeagues, rosterConfig, picks, fantasyTeamId }) => {
+const Roster: React.FC<RosterProps> = ({ sportLeagues, rosterConfig, picks, fantasyTeamId, title }) => {
   const myPicksInOrder = picks
     .filter((p) => p.fantasyTeamId === fantasyTeamId)
     .slice()
@@ -54,7 +55,7 @@ const Roster: React.FC<RosterProps> = ({ sportLeagues, rosterConfig, picks, fant
 
   return (
     <Card>
-      <CardHeader title="My Roster" />
+      <CardHeader title={title ?? 'My Roster'} />
       <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {sportLeagues.map((league) => (
           <Box key={league} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
