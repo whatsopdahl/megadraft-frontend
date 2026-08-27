@@ -28,6 +28,8 @@ import { useDraftSocket } from '../ws/useDraftSocket';
 import { Draft, DraftPick, Player, SportLeague } from '../ws/types';
 import { teamIdForPick } from '../ws/draftOrder';
 import { ROSTER_POSITIONS, hasRosterCapacity, assignRosterSlots } from '../rosterConfig';
+import { getPlayers } from '../api/draftApi';
+import { ApiError } from '../api/client';
 
 const LEAGUES = Object.keys(ROSTER_POSITIONS) as SportLeague[];
 
@@ -88,6 +90,17 @@ const DraftRoom: React.FC = () => {
     send({ action: 'getDraftState', draftId });
   }, [draftId, connectionState, send]);
 
+  // Fetch the player pool over REST - too large to push through a WebSocket frame
+  useEffect(() => {
+    if (!draftId || !idToken) {
+      return;
+    }
+
+    getPlayers(idToken, draftId)
+      .then(({ players }) => setPlayers(players))
+      .catch((error) => notify(error instanceof ApiError ? error.message : 'Failed to load players', 'error'));
+  }, [draftId, idToken, notify]);
+
   // Handle incoming messages
   useEffect(() => {
     if (!lastMessage) {
@@ -97,7 +110,6 @@ const DraftRoom: React.FC = () => {
     if (lastMessage.type === 'draftState') {
       setDraft(lastMessage.draft);
       setPicks(lastMessage.picks);
-      setPlayers(lastMessage.players);
       setLoading(false);
     } else if (lastMessage.type === 'pickMade') {
       setDraft(lastMessage.draft);

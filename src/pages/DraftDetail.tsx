@@ -189,7 +189,7 @@ const DraftDetail: React.FC = () => {
         <Card sx={{ mb: 2, boxShadow: 2 }}>
           <CardHeader
             title={draft.name}
-            subheader={draft.scheduledStartTime}
+            subheader={new Date(draft.scheduledStartTime).toLocaleString()}
             action={
               <Button
                 variant="contained"

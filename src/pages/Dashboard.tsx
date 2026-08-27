@@ -109,17 +109,7 @@ const Dashboard: React.FC = () => {
                         <Stack direction="row" sx={{ justifyContent: 'flex-end', alignItems: 'center' }}>
                           <Typography sx={{ flexGrow: 1 }} variant="h6">{draft.name}</Typography>
                           <Chip label={draft.status} size="small" color="primary" variant="outlined" />
-                          {draft.commissionerUserId === userId && (
-                            <IconButton
-                              aria-label="draft options"
-                              onClick={(e) => {
-                                setMenuAnchorEl(e.currentTarget);
-                                setMenuDraftId(draft.draftId);
-                              }}
-                            >
-                              <MoreVert />
-                            </IconButton>
-                          )}
+                          {draft.commissionerUserId === userId && <Box sx={{ width: 40 }} />}
                         </Stack>
                         <Typography variant="body2" color="textSecondary">
                           {new Date(draft.scheduledStartTime).toLocaleString()} · {roleLabel(draft)}
@@ -127,6 +117,19 @@ const Dashboard: React.FC = () => {
                       </Stack>
                     </CardContent>
                   </CardActionArea>
+                  {draft.commissionerUserId === userId && (
+                    <IconButton
+                      aria-label="draft options"
+                      sx={{ position: 'absolute', top: 8, right: 8 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuAnchorEl(e.currentTarget);
+                        setMenuDraftId(draft.draftId);
+                      }}
+                    >
+                      <MoreVert />
+                    </IconButton>
+                  )}
                 </Card>
               ))}
             </Stack>

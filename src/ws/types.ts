@@ -60,7 +60,7 @@ export type OutboundClientMessage =
   | { action: "getDraftState"; draftId: string };
 
 export type InboundServerMessage =
-  | { type: "draftState"; draft: Draft; picks: DraftPick[]; players: Player[] }
+  | { type: "draftState"; draft: Draft; picks: DraftPick[] }
   | { type: "pickMade"; pick: DraftPick; draft: Draft }
   | { type: "draftStarted"; draft: Draft }
   | { type: "draftUpdated"; draft: Draft }
