@@ -21,7 +21,7 @@ const CreateDraft: React.FC = () => {
     pickTimerSeconds: 30,
     rosterConfig: DEFAULT_ROSTER_CONFIG,
     scheduledStartTime: '',
-    teams: [{ name: '', email: userEmail ?? '' }],
+    teams: [{ name: '', email: userEmail ?? '', key: crypto.randomUUID() }],
   });
 
   const handleCreateDraft = async () => {
@@ -50,7 +50,7 @@ const CreateDraft: React.FC = () => {
         pickTimerSeconds: form.pickTimerSeconds,
         rosterConfig: form.rosterConfig,
         scheduledStartTime: new Date(form.scheduledStartTime).toISOString(),
-        teams: form.teams,
+        teams: form.teams.map(({ key: _key, ...team }) => team),
       });
       navigate(`/draft/${draft.draftId}`);
     } catch (error) {

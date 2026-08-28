@@ -5,6 +5,9 @@ import { RosterConfig } from '../rosterConfig';
 export interface TeamInput {
   name: string;
   email: string;
+  // Present when editing an existing team so the backend can preserve its
+  // identity (owner claim, autodraft, color) regardless of list position.
+  fantasyTeamId?: string;
 }
 
 export interface CreateDraftRequest {

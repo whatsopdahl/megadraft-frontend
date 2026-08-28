@@ -11,10 +11,27 @@ import {
   Typography,
   Button,
 } from '@mui/material';
-import { Add, Delete } from '@mui/icons-material';
+import { Add, Delete, DragIndicator } from '@mui/icons-material';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { OrderType, SportLeague } from '../ws/types';
 import { RosterConfig, ROSTER_POSITIONS, computeTotalRounds } from '../rosterConfig';
 import { TeamInput } from '../api/draftApi';
+
+// A team row needs a stable identity for drag-and-drop tracking that survives
+// edits to its fields - `fantasyTeamId` only exists once a team is saved, so
+// new/unsaved rows need this client-only key instead.
+export interface DraftTeamFormValue extends TeamInput {
+  key: string;
+}
 
 export interface DraftSettingsFormValues {
   name: string;
@@ -22,7 +39,7 @@ export interface DraftSettingsFormValues {
   pickTimerSeconds: number;
   rosterConfig: RosterConfig;
   scheduledStartTime: string;
-  teams: TeamInput[];
+  teams: DraftTeamFormValue[];
 }
 
 interface DraftSettingsFormProps {
@@ -41,9 +58,75 @@ function parseCount(value: string): number {
   return Number.isNaN(count) ? 0 : count;
 }
 
+interface SortableTeamRowProps {
+  team: DraftTeamFormValue;
+  index: number;
+  disabled?: boolean;
+  isOwnTeam: boolean;
+  onNameChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
+  onRemove: () => void;
+  removeDisabled: boolean;
+}
+
+const SortableTeamRow: React.FC<SortableTeamRowProps> = ({
+  team,
+  index,
+  disabled,
+  isOwnTeam,
+  onNameChange,
+  onEmailChange,
+  onRemove,
+  removeDisabled,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: team.key,
+    disabled,
+  });
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', opacity: isDragging ? 0.5 : 1 }}
+    >
+      <IconButton
+        size="small"
+        disabled={disabled}
+        {...attributes}
+        {...listeners}
+        sx={{ cursor: disabled ? 'default' : 'grab', touchAction: 'none' }}
+      >
+        <DragIndicator fontSize="small" />
+      </IconButton>
+      <TextField
+        label={`Team ${index + 1} Name`}
+        value={team.name}
+        onChange={(e) => onNameChange(e.target.value)}
+        disabled={disabled}
+        fullWidth
+        size="small"
+      />
+      <TextField
+        label="Owner Email"
+        type="email"
+        value={team.email}
+        onChange={(e) => onEmailChange(e.target.value)}
+        disabled={disabled || isOwnTeam}
+        helperText={isOwnTeam ? 'This is you' : undefined}
+        fullWidth
+        size="small"
+      />
+      <IconButton size="small" color="error" onClick={onRemove} disabled={removeDisabled}>
+        <Delete />
+      </IconButton>
+    </Box>
+  );
+};
+
 const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({ form, onChange, disabled, currentUserEmail }) => {
   const addTeam = () => {
-    onChange((prev) => ({ ...prev, teams: [...prev.teams, { name: '', email: '' }] }));
+    onChange((prev) => ({ ...prev, teams: [...prev.teams, { name: '', email: '', key: crypto.randomUUID() }] }));
   };
 
   const removeTeam = (index: number) => {
@@ -55,6 +138,19 @@ const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({ form, onChange, d
       const newTeams = [...prev.teams];
       newTeams[index] = { ...newTeams[index], [field]: value };
       return { ...prev, teams: newTeams };
+    });
+  };
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+
+  const handleTeamDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    onChange((prev) => {
+      const oldIndex = prev.teams.findIndex((t) => t.key === active.id);
+      const newIndex = prev.teams.findIndex((t) => t.key === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return { ...prev, teams: arrayMove(prev.teams, oldIndex, newIndex) };
     });
   };
 
@@ -170,46 +266,34 @@ const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({ form, onChange, d
         </Typography>
         <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
           Each team's owner is whoever logs in with the matching email - no separate invite or join step.
+          Drag a row by its handle to set draft order.
         </Typography>
-        <Stack spacing={1}>
-          {form.teams.map((team, index) => {
-            const isOwnTeam =
-              !!currentUserEmail && team.email.toLowerCase() === currentUserEmail.toLowerCase();
-            return (
-              <Box key={index} sx={{ display: 'flex', gap: 1 }}>
-                <TextField
-                  label={`Team ${index + 1} Name`}
-                  value={team.name}
-                  onChange={(e) => updateTeamAt(index, 'name', e.target.value)}
-                  disabled={disabled}
-                  fullWidth
-                  size="small"
-                />
-                <TextField
-                  label="Owner Email"
-                  type="email"
-                  value={team.email}
-                  onChange={(e) => updateTeamAt(index, 'email', e.target.value)}
-                  disabled={disabled || isOwnTeam}
-                  helperText={isOwnTeam ? 'This is you' : undefined}
-                  fullWidth
-                  size="small"
-                />
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => removeTeam(index)}
-                  disabled={disabled || form.teams.length === 1}
-                >
-                  <Delete />
-                </IconButton>
-              </Box>
-            );
-          })}
-          <Button variant="outlined" size="small" startIcon={<Add />} onClick={addTeam} disabled={disabled}>
-            Add Team
-          </Button>
-        </Stack>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTeamDragEnd}>
+          <SortableContext items={form.teams.map((t) => t.key)} strategy={verticalListSortingStrategy}>
+            <Stack spacing={1}>
+              {form.teams.map((team, index) => {
+                const isOwnTeam =
+                  !!currentUserEmail && team.email.toLowerCase() === currentUserEmail.toLowerCase();
+                return (
+                  <SortableTeamRow
+                    key={team.key}
+                    team={team}
+                    index={index}
+                    disabled={disabled}
+                    isOwnTeam={isOwnTeam}
+                    onNameChange={(value) => updateTeamAt(index, 'name', value)}
+                    onEmailChange={(value) => updateTeamAt(index, 'email', value)}
+                    onRemove={() => removeTeam(index)}
+                    removeDisabled={!!disabled || form.teams.length === 1}
+                  />
+                );
+              })}
+              <Button variant="outlined" size="small" startIcon={<Add />} onClick={addTeam} disabled={disabled}>
+                Add Team
+              </Button>
+            </Stack>
+          </SortableContext>
+        </DndContext>
       </Box>
     </Stack>
   );

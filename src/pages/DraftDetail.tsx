@@ -54,7 +54,7 @@ const DraftDetail: React.FC = () => {
     pickTimerSeconds: 30,
     rosterConfig: DEFAULT_ROSTER_CONFIG,
     scheduledStartTime: '',
-    teams: [{ name: '', email: '' }],
+    teams: [{ name: '', email: '', key: crypto.randomUUID() }],
   });
 
   const isAdmin = !!draft && draft.commissionerUserId === userId;
@@ -90,8 +90,8 @@ const DraftDetail: React.FC = () => {
       scheduledStartTime: draft.scheduledStartTime ? toDatetimeLocalValue(draft.scheduledStartTime) : '',
       teams:
         draft.teams.length > 0
-          ? draft.teams.map((t) => ({ name: t.name ?? '', email: t.email ?? '' }))
-          : [{ name: '', email: '' }],
+          ? draft.teams.map((t) => ({ name: t.name ?? '', email: t.email ?? '', fantasyTeamId: t.fantasyTeamId, key: t.fantasyTeamId }))
+          : [{ name: '', email: '', key: crypto.randomUUID() }],
     });
   }, [draft, userId]);
 
@@ -141,7 +141,7 @@ const DraftDetail: React.FC = () => {
         pickTimerSeconds: draftForm.pickTimerSeconds,
         rosterConfig: draftForm.rosterConfig,
         scheduledStartTime: new Date(draftForm.scheduledStartTime).toISOString(),
-        teams: draftForm.teams,
+        teams: draftForm.teams.map(({ key: _key, ...team }) => team),
       });
       setDraft(updated);
       notify("Draft settings updated", 'success')
