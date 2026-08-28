@@ -89,6 +89,12 @@ const DraftRoom: React.FC = () => {
       setPicks((prev) => [...prev, lastMessage.pick]);
     } else if (lastMessage.type === 'draftStarted') {
       setDraft(lastMessage.draft);
+    } else if (lastMessage.type === 'draftPaused') {
+      notify('The draft has been paused', 'info');
+      setDraft(lastMessage.draft);
+    } else if (lastMessage.type === 'draftResumed') {
+      notify('The draft has resumed', 'info');
+      setDraft(lastMessage.draft);
     } else if (lastMessage.type === 'draftUpdated') {
       setDraft(lastMessage.draft);
     } else if (lastMessage.type === 'error') {
@@ -119,6 +125,16 @@ const DraftRoom: React.FC = () => {
   const handleStartDraft = () => {
     if (!draftId) return;
     send({ action: 'startDraft', draftId });
+  };
+
+  const handlePauseDraft = () => {
+    if (!draftId) return;
+    send({ action: 'pauseDraft', draftId });
+  };
+
+  const handleResumeDraft = () => {
+    if (!draftId) return;
+    send({ action: 'resumeDraft', draftId });
   };
 
   const handleToggleAutodraft = async (autodraft: boolean) => {
@@ -160,7 +176,15 @@ const DraftRoom: React.FC = () => {
       <Card sx={{ mb: 2 }}>
         <CardHeader
           title={draft.name}
-          subheader={draft.status === 'pending' ? timeToDraft > 0 ? `Time to draft: ${formatTimeToDraft(timeToDraft)}` : `Commissioner will start the draft when ready` : undefined}
+          subheader={
+            draft.status === 'pending'
+              ? timeToDraft > 0
+                ? `Time to draft: ${formatTimeToDraft(timeToDraft)}`
+                : `Commissioner will start the draft when ready`
+              : draft.status === 'paused'
+                ? 'Draft paused by the commissioner'
+                : undefined
+          }
           action={
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
               {myTeam && (
@@ -178,6 +202,16 @@ const DraftRoom: React.FC = () => {
               {draft.status === 'pending' && isCommissioner &&
                 <Button variant="contained" color="success" onClick={handleStartDraft} sx={{ m: 1 }}>
                   Start Draft
+                </Button>
+              }
+              {draft.status === 'active' && isCommissioner &&
+                <Button variant="contained" color="warning" onClick={handlePauseDraft} sx={{ m: 1 }}>
+                  Pause Draft
+                </Button>
+              }
+              {draft.status === 'paused' && isCommissioner &&
+                <Button variant="contained" color="success" onClick={handleResumeDraft} sx={{ m: 1 }}>
+                  Resume Draft
                 </Button>
               }
               <Button startIcon={<ExitToApp />} onClick={() => navigate(-1)}>Leave Draft Room</Button>

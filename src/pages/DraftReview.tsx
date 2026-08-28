@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Card, CardHeader, Button, Typography } from '@mui/material';
+import { Box, Card, CardHeader, Button, Typography, Grid } from '@mui/material';
 import { ExitToApp } from '@mui/icons-material';
 import { useAuth } from '../auth/AuthContext';
 import { getDraft, getDraftPicks } from '../api/draftApi';
@@ -64,15 +64,19 @@ const DraftReview: React.FC = () => {
         />
       </Card>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 2 }}>
-        <TeamRosters
-          teams={draft.teams}
-          picks={picks}
-          sportLeagues={draft.sportLeagues}
-          rosterConfig={draft.rosterConfig}
-        />
-        <DraftLog picks={picks} teams={draft.teams} />
-      </Box>
+      <Grid container sx={{ gap: 2 }}>
+        <Grid size={{ xs: 12, lg: 9 }}>
+          <TeamRosters
+            teams={draft.teams}
+            picks={picks}
+            sportLeagues={draft.sportLeagues}
+            rosterConfig={draft.rosterConfig}
+            />
+        </Grid>
+        <Grid size={{ xs: 12, lg: 'grow' }}>
+          <DraftLog picks={picks} teams={draft.teams} />
+        </Grid>
+      </Grid>
     </>
   );
 };

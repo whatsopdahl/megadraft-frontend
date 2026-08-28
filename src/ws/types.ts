@@ -2,7 +2,7 @@ import type { RosterConfig } from "../rosterConfig";
 
 export type SportLeague = "NBA" | "NFL";
 export type OrderType = "snake" | "linear";
-export type DraftStatus = "pending" | "active" | "complete";
+export type DraftStatus = "pending" | "active" | "paused" | "complete";
 
 export interface FantasyTeam {
   fantasyTeamId: string;
@@ -30,6 +30,9 @@ export interface Draft {
   pickOrderTeamIds: string[];
   currentPickNumber: number;
   currentPickDeadline: string | null;
+  // Only present while status is "paused" - the current pick's remaining
+  // time, captured at pause so resuming picks up where the timer left off.
+  pausedRemainingMs?: number;
   draftedPlayerIds: string[];
   commissionerUserId: string;
   createdAt: string;
@@ -71,6 +74,8 @@ export interface DraftPick {
 // the WebSocket API is draft-room-only.
 export type OutboundClientMessage =
   | { action: "startDraft"; draftId: string }
+  | { action: "pauseDraft"; draftId: string }
+  | { action: "resumeDraft"; draftId: string }
   | { action: "makePick"; draftId: string; playerId: string }
   | { action: "getDraftState"; draftId: string }
   // Sent the instant a client's local countdown reaches the pick deadline,
@@ -81,5 +86,7 @@ export type InboundServerMessage =
   | { type: "draftState"; draft: Draft; picks: DraftPick[] }
   | { type: "pickMade"; pick: DraftPick; draft: Draft }
   | { type: "draftStarted"; draft: Draft }
+  | { type: "draftPaused"; draft: Draft }
+  | { type: "draftResumed"; draft: Draft }
   | { type: "draftUpdated"; draft: Draft }
   | { type: "error"; message: string };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box } from '@mui/material';
+import { Box, Grid, Stack } from '@mui/material';
 import { DraftPick, FantasyTeam, SportLeague } from '../ws/types';
 import { RosterConfig } from '../rosterConfig';
 import Roster from './Roster';
@@ -12,18 +12,22 @@ interface TeamRostersProps {
 }
 
 const TeamRosters: React.FC<TeamRostersProps> = ({ teams, picks, sportLeagues, rosterConfig }) => (
-  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: 2 }}>
+  <Grid container spacing={2} sx={{ justifyContent: 'flex-start' }}>
     {teams.map((team) => (
-      <Roster
+      <Grid 
+        size={{ xs: 12, md: 6, lg: 4 }}
         key={team.fantasyTeamId}
-        title={`${team.name}'s Roster`}
-        sportLeagues={sportLeagues}
-        rosterConfig={rosterConfig}
-        picks={picks}
-        fantasyTeamId={team.fantasyTeamId}
-      />
+        >
+        <Roster
+          title={`${team.name}'s Roster`}
+          sportLeagues={sportLeagues}
+          rosterConfig={rosterConfig}
+          picks={picks}
+          fantasyTeamId={team.fantasyTeamId}
+        />
+      </Grid>
     ))}
-  </Box>
+  </Grid>
 );
 
 export default TeamRosters;
