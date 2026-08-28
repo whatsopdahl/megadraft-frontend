@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Grid, Stack } from '@mui/material';
+import { Grid } from '@mui/material';
 import { DraftPick, FantasyTeam, SportLeague } from '../ws/types';
 import { RosterConfig } from '../rosterConfig';
 import Roster from './Roster';
