@@ -12,6 +12,8 @@ import {
   Typography,
   Box,
   Button,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import { Search, Add } from '@mui/icons-material';
 import { DraftPick, FantasyTeam, Player, SportLeague } from '../ws/types';
@@ -53,6 +55,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
   const [league, setLeague] = useState<SportLeague | null>(sportLeagues[0] ?? null);
   const [position, setPosition] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [hideDrafted, setHideDrafted] = useState(false);
   const [visibleCount, setVisibleCount] = useState(25);
 
   useEffect(() => {
@@ -81,6 +84,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
         .filter((p) => !league || p.sportLeague === league)
         .filter((p) => !position || p.position === position)
         .filter((p) => !search.trim() || p.name.toLowerCase().includes(search.trim().toLowerCase()))
+        .filter((p) => !hideDrafted || !draftedByPlayerId.has(p.playerId))
         .slice()
         .sort((a, b) => {
           // overallRanking of 0 means ESPN has no overall rank for this
@@ -90,12 +94,12 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
           if (aOverall !== bOverall) return aOverall - bOverall;
           return a.ranking - b.ranking;
         }),
-    [players, league, position, search],
+    [players, league, position, search, hideDrafted, draftedByPlayerId],
   );
 
   useEffect(() => {
     setVisibleCount(25);
-  }, [league, position, search]);
+  }, [league, position, search, hideDrafted]);
 
   const visiblePlayers = filteredPlayers.slice(0, visibleCount);
   const remaining = filteredPlayers.length - visiblePlayers.length;
@@ -145,7 +149,7 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
             />
           </Stack>
 
-          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }} useFlexGap>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }} useFlexGap>
             {positionsForLeague.map((pos) => (
               <Chip
                 key={pos}
@@ -157,6 +161,17 @@ const PlayerSearch: React.FC<PlayerSearchProps> = ({
                 onClick={() => setPosition(position === pos ? null : pos)}
               />
             ))}
+            <FormControlLabel
+              control={
+                <Switch
+                  size="small"
+                  checked={hideDrafted}
+                  onChange={(e) => setHideDrafted(e.target.checked)}
+                />
+              }
+              label="Hide drafted"
+              sx={{ ml: 'auto', mr: 0 }}
+            />
           </Stack>
         </Stack>
 
