@@ -10,6 +10,8 @@ import {
   Stack,
   Typography,
   Button,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import { Add, Delete, DragIndicator } from '@mui/icons-material';
 import {
@@ -65,6 +67,7 @@ interface SortableTeamRowProps {
   isOwnTeam: boolean;
   onNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
+  onAutodraftChange: (value: boolean) => void;
   onRemove: () => void;
   removeDisabled: boolean;
 }
@@ -76,6 +79,7 @@ const SortableTeamRow: React.FC<SortableTeamRowProps> = ({
   isOwnTeam,
   onNameChange,
   onEmailChange,
+  onAutodraftChange,
   onRemove,
   removeDisabled,
 }) => {
@@ -88,7 +92,7 @@ const SortableTeamRow: React.FC<SortableTeamRowProps> = ({
     <Box
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', opacity: isDragging ? 0.5 : 1 }}
+      sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', opacity: isDragging ? 0.5 : 1, justifyContent: 'stretch' }}
     >
       <IconButton
         size="small"
@@ -99,34 +103,53 @@ const SortableTeamRow: React.FC<SortableTeamRowProps> = ({
       >
         <DragIndicator fontSize="small" />
       </IconButton>
-      <TextField
-        label={`Team ${index + 1} Name`}
-        value={team.name}
-        onChange={(e) => onNameChange(e.target.value)}
-        disabled={disabled}
-        fullWidth
-        size="small"
-      />
-      <TextField
-        label="Owner Email"
-        type="email"
-        value={team.email}
-        onChange={(e) => onEmailChange(e.target.value)}
-        disabled={disabled || isOwnTeam}
-        helperText={isOwnTeam ? 'This is you' : undefined}
-        fullWidth
-        size="small"
-      />
-      <IconButton size="small" color="error" onClick={onRemove} disabled={removeDisabled}>
-        <Delete />
-      </IconButton>
+      <Stack direction="column" sx={{ flexGrow: 1 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start'}}>
+          <TextField
+            label={`Team ${index + 1} Name`}
+            value={team.name}
+            onChange={(e) => onNameChange(e.target.value)}
+            disabled={disabled}
+            fullWidth
+            size="small"
+          />
+          <TextField
+            label="Owner Email"
+            type="email"
+            value={team.email}
+            onChange={(e) => onEmailChange(e.target.value)}
+            disabled={disabled || isOwnTeam}
+            helperText={isOwnTeam ? 'This is you' : undefined}
+            fullWidth
+            size="small"
+          />
+          <IconButton size="small" color="error" onClick={onRemove} disabled={removeDisabled}>
+            <Delete />
+          </IconButton>
+        </Stack>
+        <FormControlLabel
+          sx={{ flexShrink: 0, mr: 6, alignSelf: 'flex-end'}}
+          control={
+            <Switch
+              checked={team.autodraft ?? false}
+              onChange={(e) => onAutodraftChange(e.target.checked)}
+              disabled={disabled}
+
+            />
+          }
+          label="Autodraft"
+        />
+      </Stack>
     </Box>
   );
 };
 
 const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({ form, onChange, disabled, currentUserEmail }) => {
   const addTeam = () => {
-    onChange((prev) => ({ ...prev, teams: [...prev.teams, { name: '', email: '', key: crypto.randomUUID() }] }));
+    onChange((prev) => ({
+      ...prev,
+      teams: [...prev.teams, { name: '', email: '', autodraft: false, key: crypto.randomUUID() }],
+    }));
   };
 
   const removeTeam = (index: number) => {
@@ -137,6 +160,14 @@ const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({ form, onChange, d
     onChange((prev) => {
       const newTeams = [...prev.teams];
       newTeams[index] = { ...newTeams[index], [field]: value };
+      return { ...prev, teams: newTeams };
+    });
+  };
+
+  const updateTeamAutodraftAt = (index: number, autodraft: boolean) => {
+    onChange((prev) => {
+      const newTeams = [...prev.teams];
+      newTeams[index] = { ...newTeams[index], autodraft };
       return { ...prev, teams: newTeams };
     });
   };
@@ -283,6 +314,7 @@ const DraftSettingsForm: React.FC<DraftSettingsFormProps> = ({ form, onChange, d
                     isOwnTeam={isOwnTeam}
                     onNameChange={(value) => updateTeamAt(index, 'name', value)}
                     onEmailChange={(value) => updateTeamAt(index, 'email', value)}
+                    onAutodraftChange={(value) => updateTeamAutodraftAt(index, value)}
                     onRemove={() => removeTeam(index)}
                     removeDisabled={!!disabled || form.teams.length === 1}
                   />

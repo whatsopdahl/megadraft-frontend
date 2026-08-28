@@ -8,6 +8,7 @@ export interface TeamInput {
   // Present when editing an existing team so the backend can preserve its
   // identity (owner claim, autodraft, color) regardless of list position.
   fantasyTeamId?: string;
+  autodraft?: boolean;
 }
 
 export interface CreateDraftRequest {

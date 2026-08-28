@@ -54,7 +54,7 @@ const DraftDetail: React.FC = () => {
     pickTimerSeconds: 30,
     rosterConfig: DEFAULT_ROSTER_CONFIG,
     scheduledStartTime: '',
-    teams: [{ name: '', email: '', key: crypto.randomUUID() }],
+    teams: [{ name: '', email: '', autodraft: false, key: crypto.randomUUID() }],
   });
 
   const isAdmin = !!draft && draft.commissionerUserId === userId;
@@ -90,8 +90,14 @@ const DraftDetail: React.FC = () => {
       scheduledStartTime: draft.scheduledStartTime ? toDatetimeLocalValue(draft.scheduledStartTime) : '',
       teams:
         draft.teams.length > 0
-          ? draft.teams.map((t) => ({ name: t.name ?? '', email: t.email ?? '', fantasyTeamId: t.fantasyTeamId, key: t.fantasyTeamId }))
-          : [{ name: '', email: '', key: crypto.randomUUID() }],
+          ? draft.teams.map((t) => ({
+              name: t.name ?? '',
+              email: t.email ?? '',
+              autodraft: t.autodraft ?? false,
+              fantasyTeamId: t.fantasyTeamId,
+              key: t.fantasyTeamId,
+            }))
+          : [{ name: '', email: '', autodraft: false, key: crypto.randomUUID() }],
     });
   }, [draft, userId]);
 
